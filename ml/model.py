@@ -2,17 +2,20 @@ import pandas as pd
 from surprise import Dataset, Reader, SVD
 from surprise.model_selection import train_test_split
 from surprise import accuracy
+from pymongo import MongoClient
 
 class RecommendationModel:
-    def __init__(self):
+    def __init__(self, mongo_uri):
         self.model = SVD()
         self.data = None
+        self.mongo_client = MongoClient(mongo_uri)
 
-    def load_data(self, filepath):
-        # usually we would load the data from mongodb but for now we will use a csv file
-        df = pd.read_csv(filepath)
-        reader = Reader(rating_scale=(1, 5))
-        self.data = Dataset.load_from_df(df[['user_id', 'item_id', 'rating']], reader)
+    def load_data(self):
+        behaviors = list(self.db.behaviors.find({}, {'_id': 0, 'user_id': 1, 'item_id': 1, 'action': 1}))
+        df = pd.DataFrame(behaviors)
+
+        # convert 'action' to numeric rating (e.g 'view' = 1)
+        df['rating']= df['action'].map({'view': 1})
 
     def train(self):
         trainset = self.data.build_full_trainset()
