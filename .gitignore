@@ -1,6 +1,6 @@
 # Environment variables
 Server/.env
-
+ml/.env
 # Binaries
 Server/*.exe
 Server/*.exe~

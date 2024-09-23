@@ -3,6 +3,8 @@ from surprise import Dataset, Reader, SVD
 from surprise.model_selection import train_test_split
 from surprise import accuracy
 from pymongo import MongoClient
+from dotenv import load_dotenv
+import os
 
 class RecommendationModel:
     def __init__(self, mongo_uri):
@@ -48,7 +50,9 @@ class RecommendationModel:
         return [pred.iid for pred in items_predictions[:n]]
         
 if __name__ == "__main__":
-    model = RecommendationModel('mongodb+srv://alex:alex@cluster0.t5mgz.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0')
+    load_dotenv()
+    mongo_uri = os.getenv('MONGO_URI')
+    model = RecommendationModel(mongo_uri)
     model.load_data()  
     model.train()
     
