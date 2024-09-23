@@ -7,6 +7,7 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/ykkalexx/recommendation-system/internal/api"
 	"github.com/ykkalexx/recommendation-system/internal/config"
+	"github.com/ykkalexx/recommendation-system/internal/database"
 )
 
 func main() {
@@ -14,6 +15,13 @@ func main() {
 	if err != nil {
 		log.Fatalf("Failed to load configuration: %v", err)
 	}
+
+	// Connect to MongoDB
+	err = database.Connect(cfg.MongoURI)
+	if err != nil {
+		log.Fatalf("Failed to connect to MongoDB: %v", err)
+	}
+	defer database.Disconnect()
 
 	// create router
 	r := mux.NewRouter()

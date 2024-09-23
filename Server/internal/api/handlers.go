@@ -1,15 +1,20 @@
 package api
 
 import (
+	"context"
 	"encoding/json"
+	"log"
 	"net/http"
+	"time"
 
 	"github.com/gorilla/mux"
-	"github.com/sirupsen/logrus"
+	"github.com/ykkalexx/recommendation-system/internal/database"
 	"github.com/ykkalexx/recommendation-system/internal/models"
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-var logger = logrus.New()
+
 
 func SetupRoutes(r *mux.Router) {
 	r.HandleFunc("/api/behavior", recordBehavior).Methods("POST")
@@ -24,26 +29,49 @@ func recordBehavior(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// TODO: Save behavior to database
-	// For now, we'll just log it
-	logger.Info("Recorded behavior: %+v", behavior)
+	collection := database.GetCollection("recommendationDB", "behaviors")
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	_, err = collection.InsertOne(ctx, behavior)
+	if err != nil {
+		log.Printf("Error inserting behavior: %v", err)
+		http.Error(w, "Failed to record behavior", http.StatusInternalServerError)
+		return
+	}
 
 	w.WriteHeader(http.StatusCreated)
 }
 
 func getRecommendations(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	userID, ok := vars["user_id"]
-	if !ok {
-		http.Error(w, "user_id is missing in parameters", http.StatusBadRequest)
-        return
-	}
-	
-	// TODO: Get recommendations from ML model
-	// For now, we'll return mock data
-	recommendations := []string{"item1", "item2", "item3"}
+	userID := vars["user_id"]
 
-	logger.Info("Fetching recommendations for user: %s", userID)
+	collection := database.GetCollection("recommendationDB", "behaviors")
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	// For now, we'll just return the last 5 items the user interacted with
+	// In a real system, this would be replaced with actual recommendation logic
+	cursor, err := collection.Find(ctx, bson.M{"user_id": userID}, options.Find().SetSort(bson.M{"timestamp": -1}).SetLimit(5))
+	if err != nil {
+		log.Printf("Error fetching recommendations: %v", err)
+		http.Error(w, "Failed to get recommendations", http.StatusInternalServerError)
+		return
+	}
+	defer cursor.Close(ctx)
+
+	var behaviors []models.UserBehavior
+	if err = cursor.All(ctx, &behaviors); err != nil {
+		log.Printf("Error decoding recommendations: %v", err)
+		http.Error(w, "Failed to process recommendations", http.StatusInternalServerError)
+		return
+	}
+
+	recommendations := make([]string, len(behaviors))
+	for i, behavior := range behaviors {
+		recommendations[i] = behavior.ItemID
+	}
 
 	json.NewEncoder(w).Encode(recommendations)
 }
