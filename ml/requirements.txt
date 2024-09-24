@@ -4,3 +4,4 @@ scikit-learn==0.24.2
 scikit-surprise==1.1.1
 Flask==2.0.1
 pymongo==4.9.1
+pip install celery redis

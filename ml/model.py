@@ -11,7 +11,7 @@ class RecommendationModel:
         self.model = SVD()
         self.data = None
         self.mongo_client = MongoClient(mongo_uri)
-        self.db = self.mongo_client.recommandation-system
+        self.db = self.mongo_client['recommandation-system']
 
     def load_data(self):
         behaviors = list(self.db.behaviors.find({}, {'_id': 0, 'user_id': 1, 'item_id': 1, 'action': 1}))
