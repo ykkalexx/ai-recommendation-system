@@ -10,8 +10,6 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/ykkalexx/recommendation-system/internal/database"
 	"github.com/ykkalexx/recommendation-system/internal/models"
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 
@@ -47,30 +45,19 @@ func getRecommendations(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	userID := vars["user_id"]
 
-	collection := database.GetCollection("recommendationDB", "behaviors")
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-
-	// For now, we'll just return the last 5 items the user interacted with
-	// In a real system, this would be replaced with actual recommendation logic
-	cursor, err := collection.Find(ctx, bson.M{"user_id": userID}, options.Find().SetSort(bson.M{"timestamp": -1}).SetLimit(5))
+	// Call Python API for recommendations
+	resp, err := http.Get("http://localhost:5000/recommend?user_id=" + userID)
 	if err != nil {
-		log.Printf("Error fetching recommendations: %v", err)
 		http.Error(w, "Failed to get recommendations", http.StatusInternalServerError)
 		return
 	}
-	defer cursor.Close(ctx)
+	defer resp.Body.Close()
 
-	var behaviors []models.UserBehavior
-	if err = cursor.All(ctx, &behaviors); err != nil {
-		log.Printf("Error decoding recommendations: %v", err)
+	var recommendations []string
+	err = json.NewDecoder(resp.Body).Decode(&recommendations)
+	if err != nil {
 		http.Error(w, "Failed to process recommendations", http.StatusInternalServerError)
 		return
-	}
-
-	recommendations := make([]string, len(behaviors))
-	for i, behavior := range behaviors {
-		recommendations[i] = behavior.ItemID
 	}
 
 	json.NewEncoder(w).Encode(recommendations)

@@ -1,1 +1,51 @@
+# Environment variables
 Server/.env
+ml/.env
+Server/.DS_Store
+.DS_Store
+
+# Binaries
+Server/*.exe
+Server/*.exe~
+Server/*.dll
+Server/*.so
+Server/*.dylib
+Server/*.test
+Server/*.out
+
+# Output directories
+Server/bin/
+Server/build/
+
+# Dependency directories
+Server/vendor/
+
+# Go workspace file
+Server/go.work
+Server/go.work.sum
+
+# IDE/editor specific files
+Server/.vscode/
+Server/.idea/
+Server/*.swp
+
+# Logs
+Server/*.log
+
+# Coverage files
+Server/*.cover
+Server/*.cov
+Server/coverage.out
+
+# Temporary files
+Server/*.tmp
+Server/*.temp
+Server/*.bak
+Server/*.old
+
+# OS-specific files
+Server/.DS_Store
+Server/Thumbs.db
+
+# Go modules
+Server/go.sum
