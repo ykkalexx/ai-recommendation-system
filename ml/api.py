@@ -3,6 +3,7 @@ from model import RecommendationModel
 from dotenv import load_dotenv
 import os
 from celery import Celery
+import platfrom
 
 load_dotenv()
 mongo_uri = os.getenv('MONGO_URI')
@@ -10,8 +11,16 @@ mongo_uri = os.getenv('MONGO_URI')
 app = Flask(__name__)
 model = RecommendationModel(mongo_uri)
 
-app.config['CELERY_BROKER_URL'] = 'redis://localhost:6379/0'
-app.config['CELERY_RESULT_BACKEND'] = 'redis://localhost:6379/0'
+# detect os Note: install RabbitMQ on windows
+os_name = playform.system()
+
+if os_name == 'Windows'"
+    app.config['CELERY_BROKER_URL'] = 'pyamqp://guest@localhost//'
+    app.config['CELERY_RESULT_BACKEND'] = 'rpc://'
+else: 
+    app.config['CELERY_BROKER_URL'] = 'redis://localhost:6379/0'
+    app.config['CELERY_RESULT_BACKEND'] = 'redis://localhost:6379/0'
+
 celery = Celery(app.name, broker=app.config['CELERY_BROKER_URL'])
 celery.conf.update(app.config)
 
