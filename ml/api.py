@@ -1,13 +1,17 @@
 from flask import Flask, request, jsonify
 from model import RecommendationModel
+from dotenv import load_dotenv
+import os
+
+load_dotenv()
+mongo_uri = os.getenv('MONGO_URI')
 
 app = Flask(__name__)
-model = RecommendationModel()
+model = RecommendationModel(mongo_uri)
 
 @app.route('/train', methods=['POST'])
 def train_model():
-    # Soon, we would trigger model training here . For now, ill just load data and train
-    model.load_data('create_csv_and add_it_here')  
+    model.load_data()  
     model.train()
     return jsonify({"message": "Model trained successfully"}), 200
 

@@ -10,8 +10,6 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/ykkalexx/recommendation-system/internal/database"
 	"github.com/ykkalexx/recommendation-system/internal/models"
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 
@@ -47,11 +45,7 @@ func getRecommendations(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	userID := vars["user_id"]
 
-	collection := database.GetCollection("recommendationDB", "behaviors")
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-
-	// calling the python api
+	// Call Python API for recommendations
 	resp, err := http.Get("http://localhost:5000/recommend?user_id=" + userID)
 	if err != nil {
 		http.Error(w, "Failed to get recommendations", http.StatusInternalServerError)
@@ -59,7 +53,7 @@ func getRecommendations(w http.ResponseWriter, r *http.Request) {
 	}
 	defer resp.Body.Close()
 
-	var recommandations []string
+	var recommendations []string
 	err = json.NewDecoder(resp.Body).Decode(&recommendations)
 	if err != nil {
 		http.Error(w, "Failed to process recommendations", http.StatusInternalServerError)
