@@ -11,13 +11,14 @@ class RecommendationModel:
         self.model = SVD()
         self.data = None
         self.mongo_client = MongoClient(mongo_uri)
-        self.db = self.mongo_client['recommandation-system']
+        self.db = self.mongo_client.recommendationDB
 
     def load_data(self):
-        behaviors = list(self.db.behaviors.find({}, {'_id': 0, 'user_id': 1, 'item_id': 1, 'action': 1}))
+        behaviors = list(self.db.behaviors.find({}, {'_id': 0, 'userid': 1, 'itemid': 1, 'action': 1}))
+        print("Behaviors: ", behaviors)
         df = pd.DataFrame(behaviors)
-
-        # convert 'action' to numeric rating (e.g 'view' = 1)
+        print(df)
+        # convert 'action' to numeric rating (e.g 'purchase' = 5)
         df['rating'] = df['action'].map({
             'view': 1,
             'like': 2,
@@ -26,13 +27,14 @@ class RecommendationModel:
             'purchase': 5
         })
 
-        # assuming binnary interaction for now
+        # assuming binary interaction for now
         reader = Reader(rating_scale=(1,1)) 
-        self.data = Dataset.load_from_df(df[['user_id', 'item_id', 'rating']], reader)
+        self.data = Dataset.load_from_df(df[['userid', 'itemid', 'rating']], reader)
         
     def train(self):
         trainset = self.data.build_full_trainset()
         self.model.fit(trainset)
+        print("Model trained successfully")
 
     def get_recommendations(self, user_id, n=5):
         # Get all items
@@ -48,6 +50,7 @@ class RecommendationModel:
 
         # get the top n recommendations
         return [pred.iid for pred in items_predictions[:n]]
+        print("Recommendations: ", recommendations)
         
 if __name__ == "__main__":
     load_dotenv()
