@@ -1,6 +1,9 @@
 # Environment variables
 Server/.env
 ml/.env
+Server/.DS_Store
+.DS_Store
+
 # Binaries
 Server/*.exe
 Server/*.exe~
