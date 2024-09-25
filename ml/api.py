@@ -4,6 +4,7 @@ from model import RecommendationModel
 from dotenv import load_dotenv
 import os
 from celery import Celery
+from flask_cors import CORS
 
 # Configure logging
 logging.basicConfig(
@@ -24,6 +25,8 @@ model = RecommendationModel(mongo_uri)
 # Configure Celery to use Redis as the broker
 app.config['CELERY_BROKER_URL'] = 'redis://localhost:6379/0'
 app.config['CELERY_RESULT_BACKEND'] = 'redis://localhost:6379/0'
+#dealing with cors
+CORS(app, origins=['http://localhost:8080'])
 
 celery = Celery(app.name, broker=app.config['CELERY_BROKER_URL'])
 celery.conf.update(app.config)
@@ -46,7 +49,6 @@ def get_recommendations():
     user_id = request.args.get('user_id')
     if not user_id:
         return jsonify({"error": "User ID is required"}), 400
-    
     try:
         recommendations = model.get_recommendations(user_id)
         return jsonify({"user_id": user_id, "recommendations": recommendations}), 200

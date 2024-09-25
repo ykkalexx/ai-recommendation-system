@@ -5,6 +5,7 @@ from surprise import accuracy
 from pymongo import MongoClient
 from dotenv import load_dotenv
 import os
+import logging
 
 class RecommendationModel:
     def __init__(self, mongo_uri):
@@ -12,6 +13,8 @@ class RecommendationModel:
         self.data = None
         self.mongo_client = MongoClient(mongo_uri)
         self.db = self.mongo_client.recommendationDB
+        self.load_data()
+        self.train()
 
     def load_data(self):
         behaviors = list(self.db.behaviors.find({}, {'_id': 0, 'userid': 1, 'itemid': 1, 'action': 1}))
@@ -37,25 +40,34 @@ class RecommendationModel:
         print("Model trained successfully")
 
     def get_recommendations(self, user_id, n=5):
+        if self.data is None:
+            logging.error("Data has not been loaded. Call load_data before calling get_recommendations.")
+            return []
+
         # Get all items
-        all_items = self.data.df['item_id'].unique()
+        all_items = self.data.df['itemid'].unique()
         # get the items the user has already interacted with
-        user_items = set(self.db.behaviors.distinct('item_id', {'user_id': user_id}))
+        user_items = set(self.db.behaviors.distinct('itemid', {'userid': user_id}))
         # items that the user hasn't interacted with
-        candidate_items = list(all_items - user_items)
+        candidate_items = list(set(all_items) - user_items)
+
+        if not candidate_items:
+            logging.info(f"No candidate items found for user {user_id}")
+            return []
+
         # get the predictions for the candidate items
         items_predictions = [self.model.predict(user_id, item) for item in candidate_items]
         # sort them by estimated rating
         items_predictions.sort(key=lambda x: x.est, reverse=True)
 
         # get the top n recommendations
-        return [pred.iid for pred in items_predictions[:n]]
-        print("Recommendations: ", recommendations)
+        recommendations = [pred.iid for pred in items_predictions[:n]]
+        logging.info(f"Recommendations for user {user_id}: {recommendations}")
+        return recommendations
         
 if __name__ == "__main__":
     load_dotenv()
     mongo_uri = os.getenv('MONGO_URI')
     model = RecommendationModel(mongo_uri)
-    model.load_data()  
-    model.train()
+
     
