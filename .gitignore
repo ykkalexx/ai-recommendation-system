@@ -49,3 +49,8 @@ Server/Thumbs.db
 
 # Go modules
 Server/go.sum
+
+ml/app.log
+
+# Python cache
+__pycache__/
