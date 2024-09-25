@@ -5,6 +5,7 @@ import (
 	"log"
 	"time"
 
+	"github.com/ykkalexx/recommendation-system/internal/utils"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
@@ -18,16 +19,16 @@ func Connect(uri string) (*mongo.Client, error) {
     clientOptions := options.Client().ApplyURI(uri)
     client, err := mongo.Connect(ctx, clientOptions)
     if err != nil {
-        return nil, err
+        return nil, utils.NewAppError(500, "Failed to connect to MongoDB", err)
     }
 
     // ping db to check if connection is successful
     err = client.Ping(ctx, nil)
     if err != nil {
-        return nil, err
+        return nil, utils.NewAppError(500, "Failed to ping MongoDB", err)
     }
 
-    log.Println("Connected to MongoDB")
+    utils.InfoLogger.Println("Connected to MongoDB!")
     return client, nil
 }
 
@@ -48,6 +49,6 @@ func Disconnect(client *mongo.Client) error {
         return err
     }
 
-    log.Println("Disconnected from MongoDB")
+    utils.InfoLogger.Println("Disconnected from MongoDB!")
     return nil
 }

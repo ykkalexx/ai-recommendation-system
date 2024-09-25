@@ -10,19 +10,20 @@ import (
 	"github.com/ykkalexx/recommendation-system/internal/api"
 	"github.com/ykkalexx/recommendation-system/internal/config"
 	"github.com/ykkalexx/recommendation-system/internal/database"
+	"github.com/ykkalexx/recommendation-system/internal/utils"
 	"go.mongodb.org/mongo-driver/bson"
 )
 
 func main() {
 	cfg, err := config.Load()
 	if err != nil {
-		log.Fatalf("Failed to load configuration: %v", err)
+		utils.ErrorLogger.Fatalf("Failed to load configuration: %v", err)
 	}
 
 	// Connect to MongoDB
 	client, err := database.Connect(cfg.MongoURI)
 	if err != nil {
-		log.Fatalf("Failed to connect to MongoDB: %v", err)
+		utils.ErrorLogger.Fatalf("Failed to connect to Mongodb: %v", err)
 	}
 	defer database.Disconnect(client)
 
@@ -32,15 +33,15 @@ func main() {
 	db := client.Database("recommendationDB")
 	count, err := db.Collection("behaviors").CountDocuments(ctx, bson.M{})
 	if err != nil {
-		log.Fatalf("Failed to count documents: %v", err)
+		utils.ErrorLogger.Fatalf("Failed to count documents: %v", err)
 	}
 	if count == 0 {
 		log.Println("Generating fake data...")
 		err = database.GenerateFakeData(ctx, db)
 		if err != nil {
-			log.Fatalf("Failed to generate fake data: %v", err)
+			utils.ErrorLogger.Fatalf("Failed to generate data: %v", err)
 		}
-		log.Println("Fake data generated successfully")
+		utils.InfoLogger.Println("Fake data generated successfully")
 	}
 
 	// create router
@@ -51,6 +52,6 @@ func main() {
 
 	// start server
 	addr := cfg.ServerAddress + ":" + cfg.ServerPort
-	log.Printf("Starting server on %s", addr)
-	log.Fatal(http.ListenAndServe(addr, r))
+	utils.InfoLogger.Printf("Server starting on %s...", addr)
+	utils.ErrorLogger.Fatal(http.ListenAndServe(addr, r))
 }
