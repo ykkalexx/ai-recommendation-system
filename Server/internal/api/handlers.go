@@ -20,35 +20,41 @@ type RecommendationsResponse struct {
 
 
 func SetupRoutes(r *mux.Router) {
-	r.HandleFunc("/api/behavior", recordBehavior).Methods("POST")
-	r.HandleFunc("/api/recommendations/{user_id}", getRecommendations).Methods("GET")
+	r.HandleFunc("/api/behavior", RecordBehavior).Methods("POST")
+	r.HandleFunc("/api/recommendations/{user_id}", GetRecommendations).Methods("GET")
 }
 
-func recordBehavior(w http.ResponseWriter, r *http.Request) {
-	var behavior models.UserBehavior
-	err := json.NewDecoder(r.Body).Decode(&behavior)
-	if err != nil {
-		utils.ErrorLogger.Printf("Failed to decode behavior: %v", err)
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
+func RecordBehavior(w http.ResponseWriter, r *http.Request) {
+    var behavior models.UserBehavior
+    err := json.NewDecoder(r.Body).Decode(&behavior)
+    if err != nil {
+        utils.ErrorLogger.Printf("Failed to decode behavior: %v", err)
+        http.Error(w, err.Error(), http.StatusBadRequest)
+        return
+    }
 
-	collection := database.GetCollection("recommendationDB", "behaviors")
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
+    collection, err := database.GetCollection("recommendationDB", "behaviors")
+    if err != nil {
+        utils.ErrorLogger.Printf("Failed to get collection: %v", err)
+        http.Error(w, "Failed to get collection", http.StatusInternalServerError)
+        return
+    }
 
-	_, err = collection.InsertOne(ctx, behavior)
-	if err != nil {
-		utils.ErrorLogger.Printf("Failed to record behavior: %v", err)
-		http.Error(w, "Failed to record behavior", http.StatusInternalServerError)
-		return
-	}
+    ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+    defer cancel()
 
-	utils.InfoLogger.Printf("Behavior recorded for user %s", behavior.UserID)
-	w.WriteHeader(http.StatusCreated)
+    _, err = collection.InsertOne(ctx, behavior)
+    if err != nil {
+        utils.ErrorLogger.Printf("Failed to record behavior: %v", err)
+        http.Error(w, "Failed to record behavior", http.StatusInternalServerError)
+        return
+    }
+
+    utils.InfoLogger.Printf("Behavior recorded for user %s", behavior.UserID)
+    w.WriteHeader(http.StatusCreated)
 }
 
-func getRecommendations(w http.ResponseWriter, r *http.Request) {
+func GetRecommendations(w http.ResponseWriter, r *http.Request) {
     vars := mux.Vars(r)
     userID := vars["user_id"]
 

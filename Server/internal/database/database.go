@@ -17,7 +17,8 @@ func Connect(uri string) (*mongo.Client, error) {
     defer cancel()
 
     clientOptions := options.Client().ApplyURI(uri)
-    client, err := mongo.Connect(ctx, clientOptions)
+    var err error
+    client, err = mongo.Connect(ctx, clientOptions)
     if err != nil {
         return nil, utils.NewAppError(500, "Failed to connect to MongoDB", err)
     }
@@ -32,8 +33,11 @@ func Connect(uri string) (*mongo.Client, error) {
     return client, nil
 }
 
-func GetCollection(database, collection string) *mongo.Collection {
-    return client.Database(database).Collection(collection)
+func GetCollection(database, collection string) (*mongo.Collection, error) {
+    if client == nil {
+        return nil, utils.NewAppError(500, "database client is not initialized", nil)
+    }
+    return client.Database(database).Collection(collection), nil
 }
 
 func Disconnect(client *mongo.Client) error {
@@ -52,3 +56,5 @@ func Disconnect(client *mongo.Client) error {
     utils.InfoLogger.Println("Disconnected from MongoDB!")
     return nil
 }
+
+
